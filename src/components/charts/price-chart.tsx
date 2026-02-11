@@ -8,6 +8,7 @@ import {
   YAxis,
   Tooltip,
   CartesianGrid,
+  Legend,
 } from "recharts";
 import type { PriceHistory } from "@/types";
 import { formatPrice } from "@/lib/utils";
@@ -59,6 +60,13 @@ export function PriceChart({ history, height = 240, compact = false }: PriceChar
             border: "1px solid #e2e8f0",
             fontSize: "12px",
           }}
+        />
+        <Legend
+          verticalAlign={compact ? "bottom" : "top"}
+          height={24}
+          iconType="line"
+          iconSize={12}
+          wrapperStyle={{ fontSize: "10px", color: "#94a3b8" }}
         />
         <Area
           type="monotone"

@@ -11,7 +11,8 @@ import { priceEntries, priceHistories } from "@/data/prices";
 import { aggregatePrices } from "@/lib/price";
 import { formatPrice, formatDate, tierBorderColor, cn } from "@/lib/utils";
 import type { PartCategory, Tier, DeviceType, Product, AggregatedPrice, PriceHistory } from "@/types";
-import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Info } from "lucide-react";
+import { tierDescriptions } from "@/data/tiers";
 
 interface ProductWithPricing extends Product {
   agg: AggregatedPrice;
@@ -34,6 +35,8 @@ const deviceTabs = [
 export function ProductList({ category, title, description }: ProductListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"tier" | "price">("tier");
+  const [showTierGuide, setShowTierGuide] = useState(true);
+  const tiers = tierDescriptions[category];
 
   const getProducts = (deviceType: DeviceType): ProductWithPricing[] => {
     return products
@@ -86,6 +89,49 @@ export function ProductList({ category, title, description }: ProductListProps) 
           </button>
         </div>
       </div>
+
+      {/* Tier ガイド */}
+      <Card>
+        <button
+          onClick={() => setShowTierGuide(!showTierGuide)}
+          className="flex w-full items-center gap-2 px-5 py-3 text-left"
+        >
+          <Info size={16} className="shrink-0 text-violet-500" />
+          <span className="text-sm font-semibold text-slate-900 dark:text-white">
+            Tier ガイド
+          </span>
+          <span className="text-xs text-slate-400">— {title}のスペック目安</span>
+          <ChevronDown
+            size={14}
+            className={cn(
+              "ml-auto shrink-0 text-slate-400 transition-transform",
+              showTierGuide && "rotate-180"
+            )}
+          />
+        </button>
+        {showTierGuide && (
+          <CardContent className="border-t border-slate-100 pt-3 dark:border-slate-800">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {tiers.map((t) => (
+                <div
+                  key={t.tier}
+                  className="rounded-xl bg-slate-50 p-3 dark:bg-slate-800/50"
+                >
+                  <div className="mb-1.5 flex items-center gap-2">
+                    <TierBadge tier={t.tier} size="sm" />
+                    <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {t.label}
+                    </span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-slate-500">
+                    {t.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Desktop / Laptop タブ */}
       <Tabs tabs={deviceTabs} defaultTab="desktop">

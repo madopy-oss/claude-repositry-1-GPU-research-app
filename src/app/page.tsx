@@ -50,17 +50,19 @@ export default function DashboardPage() {
     };
   });
 
-  // 注目商品：Tier S/Aの最安値トップ6
-  const featuredProducts = products
-    .filter((p) => (p.tier === "S" || p.tier === "A") && p.status === "active" && p.deviceType === "desktop")
-    .map((p) => {
-      const agg = aggregatePrices(p.id, priceEntries);
-      const history = priceHistories.find((h) => h.productId === p.id);
-      return { ...p, agg, history };
-    })
-    .filter((p) => p.agg.minPrice > 0)
-    .sort((a, b) => a.agg.minPrice - b.agg.minPrice)
-    .slice(0, 6);
+  // 注目商品：カテゴリ別に Tier S/A を集計
+  const featuredByCategory = categories.map((cat) => {
+    const items = products
+      .filter((p) => p.category === cat && (p.tier === "S" || p.tier === "A") && p.status === "active" && p.deviceType === "desktop")
+      .map((p) => {
+        const agg = aggregatePrices(p.id, priceEntries);
+        const history = priceHistories.find((h) => h.productId === p.id);
+        return { ...p, agg, history };
+      })
+      .filter((p) => p.agg.minPrice > 0)
+      .sort((a, b) => a.agg.minPrice - b.agg.minPrice);
+    return { category: cat, items };
+  }).filter((g) => g.items.length > 0);
 
   const totalAnomalies = anomalyRecords.filter((a) => !a.resolved).length;
 
@@ -127,53 +129,71 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* 注目製品 */}
-      <div>
-        <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">
-          注目製品（Desktop Tier S/A）
-        </h3>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredProducts.map((p) => (
-            <Card
-              key={p.id}
-              className="overflow-hidden transition-all hover:shadow-md"
-            >
-              <CardHeader className="pb-1">
-                <div className="flex items-center gap-2">
-                  <TierBadge tier={p.tier} />
-                  <div className="flex-1 min-w-0">
-                    <CardTitle className="truncate text-sm">{p.name}</CardTitle>
-                    <p className="text-xs text-slate-500">{p.brand}</p>
-                  </div>
-                  <Badge variant="outline">{categoryLabel(p.category)}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400">最安値</p>
-                    <p className="text-xl font-bold text-violet-600 dark:text-violet-400">
-                      {formatPrice(p.agg.minPrice)}
+      {/* 注目製品（カテゴリ別） */}
+      {featuredByCategory.map((group) => {
+        const Icon = categoryIcons[group.category];
+        return (
+          <div key={group.category}>
+            <div className="mb-3 flex items-center gap-2">
+              <div
+                className={`flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br ${categoryColors[group.category]} text-white`}
+              >
+                <Icon size={14} />
+              </div>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                {categoryLabel(group.category)}
+              </h3>
+              <span className="text-xs text-slate-400">Tier S/A</span>
+              <Link
+                href={`/${group.category}`}
+                className="ml-auto text-xs font-medium text-violet-600 hover:text-violet-800 dark:text-violet-400"
+              >
+                すべて見る →
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
+              {group.items.map((p) => (
+                <Card
+                  key={p.id}
+                  className="w-[260px] shrink-0 overflow-hidden transition-all hover:shadow-md sm:w-[280px]"
+                >
+                  <CardHeader className="pb-1">
+                    <div className="flex items-center gap-2">
+                      <TierBadge tier={p.tier} />
+                      <div className="flex-1 min-w-0">
+                        <CardTitle className="truncate text-sm">{p.name}</CardTitle>
+                        <p className="text-xs text-slate-500">{p.brand}</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-end justify-between">
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">最安値</p>
+                        <p className="text-xl font-bold text-violet-600 dark:text-violet-400">
+                          {formatPrice(p.agg.minPrice)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] uppercase tracking-wider text-slate-400">平均</p>
+                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                          {formatPrice(p.agg.avgPrice)}
+                        </p>
+                      </div>
+                    </div>
+                    {p.history && (
+                      <PriceChart history={p.history} height={100} compact />
+                    )}
+                    <p className="text-[10px] text-slate-400">
+                      {p.agg.entryCount}ソースから集計
                     </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-slate-400">平均</p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      {formatPrice(p.agg.avgPrice)}
-                    </p>
-                  </div>
-                </div>
-                {p.history && (
-                  <PriceChart history={p.history} height={100} compact />
-                )}
-                <p className="text-[10px] text-slate-400">
-                  {p.agg.entryCount}ソースから集計
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        );
+      })}
 
       {/* 最近の異常検知 */}
       {anomalyRecords.length > 0 && (
