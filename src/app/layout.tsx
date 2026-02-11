@@ -3,6 +3,7 @@ import "./globals.css";
 import { Sidebar } from "@/components/layout/sidebar";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://claude-repositry-1-gpu-research-app.vercel.app"),
   title: {
     default: "GPU Price Monitor - ゲーミングPC価格監視",
     template: "%s | GPU Price Monitor",
