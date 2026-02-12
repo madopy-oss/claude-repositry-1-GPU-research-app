@@ -6,11 +6,9 @@ import { Badge } from "@/components/ui/badge";
 import { TierBadge } from "@/components/ui/tier-badge";
 import { Tabs } from "@/components/ui/tabs";
 import { PriceChart } from "@/components/charts/price-chart";
-import { products } from "@/data/products";
-import { priceEntries, priceHistories } from "@/data/prices";
 import { aggregatePrices } from "@/lib/price";
 import { formatPrice, formatDate, tierBorderColor, cn } from "@/lib/utils";
-import type { PartCategory, Tier, DeviceType, Product, AggregatedPrice, PriceHistory } from "@/types";
+import type { PartCategory, Tier, DeviceType, Product, PriceEntry, AggregatedPrice, PriceHistory } from "@/types";
 import { ChevronDown, ChevronUp, ExternalLink, Info } from "lucide-react";
 import { tierDescriptions } from "@/data/tiers";
 
@@ -23,6 +21,9 @@ interface ProductListProps {
   category: PartCategory;
   title: string;
   description: string;
+  products: Product[];
+  priceEntries: PriceEntry[];
+  priceHistories: PriceHistory[];
 }
 
 const tierOrder: Record<Tier, number> = { S: 0, A: 1, B: 2, C: 3 };
@@ -32,7 +33,7 @@ const deviceTabs = [
   { id: "laptop", label: "Laptop" },
 ];
 
-export function ProductList({ category, title, description }: ProductListProps) {
+export function ProductList({ category, title, description, products, priceEntries, priceHistories }: ProductListProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"tier" | "price">("tier");
   const [showTierGuide, setShowTierGuide] = useState(true);

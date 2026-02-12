@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===== 製品マスタ =====
+model Product {
+  id          String   @id
+  name        String
+  brand       String
+  category    String   // "cpu" | "gpu" | "memory" | "storage"
+  deviceType  String   @map("device_type") // "desktop" | "laptop"
+  tier        String   // "S" | "A" | "B" | "C"
+  status      String   @default("active") // "active" | "candidate" | "rejected" | "discontinued"
+  specs       Json     @default("{}")
+  imageUrl    String?  @map("image_url")
+  releaseDate DateTime @map("release_date")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  priceEntries       PriceEntry[]
+  anomalyRecords     AnomalyRecord[]
+  priceHistoryPoints PriceHistoryPoint[]
+
+  @@index([category, deviceType, status])
+  @@index([tier])
+  @@map("products")
+}
+
+// ===== 価格エントリ =====
+model PriceEntry {
+  id               String   @id @default(cuid())
+  productId        String   @map("product_id")
+  source           String
+  sourceType       String   @default("official") @map("source_type")
+  price            Int
+  shippingCost     Int      @default(0) @map("shipping_cost")
+  url              String   @default("")
+  fetchedAt        DateTime @map("fetched_at")
+  isQuarantined    Boolean  @default(false) @map("is_quarantined")
+  quarantineReason String?  @map("quarantine_reason")
+
+  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  anomalyRecords AnomalyRecord[]
+
+  @@index([productId, isQuarantined, sourceType])
+  @@index([fetchedAt])
+  @@map("price_entries")
+}
+
+// ===== 異常検知レコード =====
+model AnomalyRecord {
+  id            String   @id @default(cuid())
+  priceEntryId  String   @map("price_entry_id")
+  productId     String   @map("product_id")
+  type          String
+  severity      String
+  detectedAt    DateTime @default(now()) @map("detected_at")
+  message       String
+  originalPrice Int      @map("original_price")
+  expectedRange Json     @map("expected_range")
+  resolved      Boolean  @default(false)
+
+  product    Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  priceEntry PriceEntry @relation(fields: [priceEntryId], references: [id], onDelete: Cascade)
+
+  @@index([productId, resolved])
+  @@index([severity])
+  @@map("anomaly_records")
+}
+
+// ===== 価格履歴（日次集計） =====
+model PriceHistoryPoint {
+  id        String   @id @default(cuid())
+  productId String   @map("product_id")
+  date      DateTime @db.Date
+  minPrice  Int      @map("min_price")
+  avgPrice  Int      @map("avg_price")
+  maxPrice  Int      @map("max_price")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, date])
+  @@index([productId, date])
+  @@map("price_history_points")
+}
+
+// ===== 新製品候補 =====
+model ProductCandidate {
+  id            String   @id @default(cuid())
+  name          String
+  brand         String
+  category      String
+  deviceType    String   @map("device_type")
+  suggestedTier String   @map("suggested_tier")
+  source        String
+  discoveredAt  DateTime @map("discovered_at")
+  status        String   @default("pending")
+  reviewNote    String?  @map("review_note")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("product_candidates")
+}
