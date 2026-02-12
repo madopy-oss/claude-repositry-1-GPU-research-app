@@ -1,9 +1,21 @@
+import "dotenv/config";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { Pool } from "@neondatabase/serverless";
 import { products } from "../src/data/products";
 import { priceEntries, priceHistories, anomalyRecords } from "../src/data/prices";
 import { productCandidates } from "../src/data/candidates";
 
-const prisma = new PrismaClient();
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not set. Please set it in .env file.");
+}
+
+const pool = new Pool({ connectionString: databaseUrl });
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const adapter = new PrismaNeon(pool as any);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const prisma = new (PrismaClient as any)({ adapter }) as PrismaClient;
 
 async function main() {
   console.log("🌱 シードデータを投入中...");
