@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { runPipeline } from "@/lib/batch/pipeline";
 
 /**
- * POST /api/batch/collect
- * バッチ価格収集パイプラインのスケルトン
+ * POST /api/batch
+ * バッチ価格収集パイプライン
  *
- * Phase 3 で実データソース接続を実装予定。
- * 現在は GitHub Actions cron から呼び出され、
- * パイプラインの基盤構造のみ提供。
+ * GitHub Actions cron または手動で呼び出される。
+ * 認証: x-api-secret ヘッダー = BATCH_API_SECRET 環境変数
  *
- * 認証: BATCH_API_SECRET ヘッダーで保護
+ * フロー: Fetch → Normalize → Detect → Store → History
  */
 export async function POST(request: NextRequest) {
-  // API キー認証
   const apiSecret = request.headers.get("x-api-secret");
   const expectedSecret = process.env.BATCH_API_SECRET;
 
@@ -23,36 +22,15 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const startTime = Date.now();
+    const result = await runPipeline();
 
-    // Phase 3 で実装予定のパイプライン:
-    // 1. Fetch: 価格比較サイトからデータ取得
-    // 2. Normalize: 価格データの正規化
-    // 3. Anomaly Detection: 異常検知 → 隔離
-    // 4. Aggregate: 公式集計の更新
-    // 5. History: 価格履歴ポイントの記録
-
-    const pipeline = {
-      fetch: { status: "skipped", message: "Phase 3で実装予定" },
-      normalize: { status: "skipped", message: "Phase 3で実装予定" },
-      anomalyDetection: { status: "skipped", message: "Phase 3で実装予定" },
-      aggregate: { status: "skipped", message: "Phase 3で実装予定" },
-      history: { status: "skipped", message: "Phase 3で実装予定" },
-    };
-
-    const elapsed = Date.now() - startTime;
-
-    return NextResponse.json({
-      success: true,
-      timestamp: new Date().toISOString(),
-      elapsed: `${elapsed}ms`,
-      pipeline,
-      message: "Batch pipeline skeleton executed. Phase 3 will add real data sources.",
+    return NextResponse.json(result, {
+      status: result.success ? 200 : 500,
     });
   } catch (error) {
     console.error("Batch pipeline error:", error);
     return NextResponse.json(
-      { error: "Batch pipeline failed" },
+      { error: "Batch pipeline failed", detail: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     );
   }
