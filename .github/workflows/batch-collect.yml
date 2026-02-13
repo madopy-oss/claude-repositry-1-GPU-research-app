@@ -14,11 +14,15 @@ jobs:
 
     steps:
       - name: Trigger batch pipeline
+        env:
+          APP_URL: https://claude-repositry-1-gpu-research-app.vercel.app
+          BATCH_SECRET: ${{ secrets.BATCH_API_SECRET }}
         run: |
+          echo "Calling: ${APP_URL}/api/batch"
           response=$(curl -s -w "\n%{http_code}" -X POST \
-            "${{ secrets.APP_URL }}/api/batch" \
+            "${APP_URL}/api/batch" \
             -H "Content-Type: application/json" \
-            -H "x-api-secret: ${{ secrets.BATCH_API_SECRET }}")
+            -H "x-api-secret: ${BATCH_SECRET}")
 
           http_code=$(echo "$response" | tail -1)
           body=$(echo "$response" | head -n -1)
