@@ -158,21 +158,23 @@ async function stepStore(
     const prisma = getPrisma();
     const allEntries = [...clean, ...quarantined];
 
-    // PriceEntry を一括保存
-    await prisma.priceEntry.createMany({
-      data: allEntries.map((e) => ({
-        id: e.id,
-        productId: e.productId,
-        source: e.source,
-        sourceType: e.sourceType,
-        price: e.price,
-        shippingCost: e.shippingCost,
-        url: e.url,
-        fetchedAt: new Date(e.fetchedAt),
-        isQuarantined: e.isQuarantined,
-        quarantineReason: e.quarantineReason ?? null,
-      })),
-    });
+    // PriceEntry を個別保存（HTTP アダプターはトランザクション非対応のため createMany 不可）
+    for (const e of allEntries) {
+      await prisma.priceEntry.create({
+        data: {
+          id: e.id,
+          productId: e.productId,
+          source: e.source,
+          sourceType: e.sourceType,
+          price: e.price,
+          shippingCost: e.shippingCost,
+          url: e.url,
+          fetchedAt: new Date(e.fetchedAt),
+          isQuarantined: e.isQuarantined,
+          quarantineReason: e.quarantineReason ?? null,
+        },
+      });
+    }
 
     return {
       status: "success",
