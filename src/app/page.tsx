@@ -3,6 +3,8 @@ import { aggregatePrices } from "@/lib/price";
 import { DashboardClient } from "@/components/dashboard-client";
 import type { PartCategory } from "@/types";
 
+export const dynamic = "force-dynamic";
+
 const categories: PartCategory[] = ["gpu", "cpu", "memory", "storage"];
 
 export default async function DashboardPage() {

@@ -1,6 +1,8 @@
 import { fetchQuarantineData } from "@/lib/data-source";
 import { QuarantineClient } from "@/components/quarantine-client";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "異常検知・隔離 | GPU Research",
   description: "公式集計から除外された価格データの管理",
