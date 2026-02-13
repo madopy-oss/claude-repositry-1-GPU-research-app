@@ -34,6 +34,7 @@ export async function fetchDashboardData(): Promise<{
   priceEntries: PriceEntry[];
   anomalyRecords: AnomalyRecord[];
   priceHistories: PriceHistory[];
+  lastFetchedAt: string | null;
 }> {
   if (useDb) {
     const q = await getQueries();
@@ -44,6 +45,7 @@ export async function fetchDashboardData(): Promise<{
     priceEntries: mockPriceEntries,
     anomalyRecords: mockAnomalyRecords,
     priceHistories: mockPriceHistories,
+    lastFetchedAt: null,
   };
 }
 

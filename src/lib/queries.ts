@@ -169,15 +169,24 @@ export async function getProductCandidates(status?: string): Promise<ProductCand
 
 // ===== ダッシュボード集計 =====
 
+export async function getLastFetchedAt(): Promise<string | null> {
+  const latest = await getPrisma().priceEntry.findFirst({
+    orderBy: { fetchedAt: "desc" },
+    select: { fetchedAt: true },
+  });
+  return latest ? latest.fetchedAt.toISOString() : null;
+}
+
 export async function getDashboardData() {
-  const [products, priceEntries, anomalyRecords, priceHistories] = await Promise.all([
+  const [products, priceEntries, anomalyRecords, priceHistories, lastFetchedAt] = await Promise.all([
     getProducts({ status: "active" }),
     getAllPriceEntries(),
     getAnomalyRecords({ resolved: false }),
     getAllPriceHistories(),
+    getLastFetchedAt(),
   ]);
 
-  return { products, priceEntries, anomalyRecords, priceHistories };
+  return { products, priceEntries, anomalyRecords, priceHistories, lastFetchedAt };
 }
 
 // ===== カテゴリページ用 =====

@@ -15,6 +15,7 @@ import {
   TrendingDown,
   TrendingUp,
   AlertTriangle,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -42,6 +43,13 @@ interface DashboardClientProps {
   featuredByCategory: { category: PartCategory; items: FeaturedProduct[] }[];
   totalAnomalies: number;
   recentAnomalies: (AnomalyRecord & { productName: string })[];
+  lastFetchedAt: string | null;
+}
+
+function formatLastFetched(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 export function DashboardClient({
@@ -49,12 +57,21 @@ export function DashboardClient({
   featuredByCategory,
   totalAnomalies,
   recentAnomalies,
+  lastFetchedAt,
 }: DashboardClientProps) {
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-slate-900 dark:text-white">ダッシュボード</h2>
-        <p className="mt-1 text-sm text-slate-500">ゲーミングPCパーツの価格概況</p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-white">ダッシュボード</h2>
+          <p className="mt-1 text-sm text-slate-500">ゲーミングPCパーツの価格概況</p>
+        </div>
+        {lastFetchedAt && (
+          <div className="flex items-center gap-1.5 text-xs text-slate-400">
+            <Clock size={12} />
+            <span>最終取得: {formatLastFetched(lastFetchedAt)}</span>
+          </div>
+        )}
       </div>
 
       {/* カテゴリサマリー */}

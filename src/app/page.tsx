@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 const categories: PartCategory[] = ["gpu", "cpu", "memory", "storage"];
 
 export default async function DashboardPage() {
-  const { products, priceEntries, anomalyRecords, priceHistories } =
+  const { products, priceEntries, anomalyRecords, priceHistories, lastFetchedAt } =
     await fetchDashboardData();
 
   // サーバー側で集計
@@ -48,6 +48,7 @@ export default async function DashboardPage() {
       featuredByCategory={featuredByCategory}
       totalAnomalies={totalAnomalies}
       recentAnomalies={recentAnomalies}
+      lastFetchedAt={lastFetchedAt}
     />
   );
 }
