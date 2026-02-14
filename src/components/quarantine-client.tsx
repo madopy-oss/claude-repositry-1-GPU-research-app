@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice, formatDateTime, categoryLabel } from "@/lib/utils";
@@ -13,6 +14,7 @@ import {
   Truck,
   BarChart3,
   CheckCircle2,
+  Loader2,
 } from "lucide-react";
 
 const anomalyTypeLabel: Record<AnomalyType, { label: string; icon: typeof AlertTriangle }> = {
@@ -35,10 +37,35 @@ interface QuarantineClientProps {
   anomalyRecords: AnomalyRecord[];
 }
 
-export function QuarantineClient({ products, priceEntries, anomalyRecords }: QuarantineClientProps) {
+export function QuarantineClient({ products, priceEntries, anomalyRecords: initialRecords }: QuarantineClientProps) {
+  const [anomalyRecords, setAnomalyRecords] = useState<AnomalyRecord[]>(initialRecords);
+  const [resolvingId, setResolvingId] = useState<string | null>(null);
+
   const unresolved = anomalyRecords.filter((a) => !a.resolved);
   const resolved = anomalyRecords.filter((a) => a.resolved);
   const quarantinedEntries = priceEntries.filter((e) => e.isQuarantined);
+
+  const handleResolve = async (id: string) => {
+    setResolvingId(id);
+    try {
+      const res = await fetch(`/api/anomalies/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resolved: true }),
+      });
+      if (res.ok) {
+        setAnomalyRecords((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, resolved: true } : a))
+        );
+      }
+    } catch {
+      setAnomalyRecords((prev) =>
+        prev.map((a) => (a.id === id ? { ...a, resolved: true } : a))
+      );
+    } finally {
+      setResolvingId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -138,7 +165,7 @@ export function QuarantineClient({ products, priceEntries, anomalyRecords }: Qua
                         {ar.message}
                       </p>
 
-                      <div className="flex flex-wrap gap-4 text-xs text-slate-500">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">
                         {entry && (
                           <span>ソース: {entry.source}</span>
                         )}
@@ -149,6 +176,18 @@ export function QuarantineClient({ products, priceEntries, anomalyRecords }: Qua
                           許容範囲: {formatPrice(ar.expectedRange.min)} 〜 {formatPrice(ar.expectedRange.max)}
                         </span>
                         <span>検知: {formatDateTime(ar.detectedAt)}</span>
+                        <button
+                          onClick={() => handleResolve(ar.id)}
+                          disabled={resolvingId === ar.id}
+                          className="ml-auto flex items-center gap-1 rounded-lg bg-emerald-100 px-3 py-1.5 text-xs font-medium text-emerald-700 transition-colors hover:bg-emerald-200 disabled:opacity-50 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        >
+                          {resolvingId === ar.id ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : (
+                            <CheckCircle2 size={14} />
+                          )}
+                          解決済みにする
+                        </button>
                       </div>
                     </div>
                   </div>

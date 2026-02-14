@@ -38,9 +38,21 @@ interface FeaturedProduct extends Product {
   history: PriceHistory | null;
 }
 
+interface BestDealProduct {
+  id: string;
+  name: string;
+  brand: string;
+  category: PartCategory;
+  tier: Product["tier"];
+  minPrice: number;
+  avgPrice: number;
+  sourceCount: number;
+}
+
 interface DashboardClientProps {
   categorySummaries: { category: PartCategory; total: number; anomalies: number }[];
   featuredByCategory: { category: PartCategory; items: FeaturedProduct[] }[];
+  bestDeals: BestDealProduct[];
   totalAnomalies: number;
   recentAnomalies: (AnomalyRecord & { productName: string })[];
   lastFetchedAt: string | null;
@@ -55,6 +67,7 @@ function formatLastFetched(iso: string): string {
 export function DashboardClient({
   categorySummaries,
   featuredByCategory,
+  bestDeals,
   totalAnomalies,
   recentAnomalies,
   lastFetchedAt,
@@ -162,6 +175,60 @@ export function DashboardClient({
           </div>
         );
       })}
+
+      {/* 最安値ランキング */}
+      {bestDeals.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">最安値ランキング</h3>
+          <Card>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-100 text-left text-xs text-slate-500 dark:border-slate-800">
+                    <th className="px-4 py-3 font-medium">#</th>
+                    <th className="px-4 py-3 font-medium">製品名</th>
+                    <th className="px-4 py-3 font-medium">カテゴリ</th>
+                    <th className="px-4 py-3 font-medium">Tier</th>
+                    <th className="px-4 py-3 font-medium text-right">最安値</th>
+                    <th className="px-4 py-3 font-medium text-right">平均</th>
+                    <th className="px-4 py-3 font-medium text-right">ソース数</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
+                  {bestDeals.map((deal, i) => {
+                    const Icon = categoryIcons[deal.category];
+                    return (
+                      <tr key={deal.id} className="transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td className="px-4 py-3 font-medium text-slate-400">{i + 1}</td>
+                        <td className="px-4 py-3">
+                          <Link href={`/${deal.category}`} className="group flex items-center gap-2">
+                            <span className="font-medium text-slate-900 group-hover:text-violet-600 dark:text-white dark:group-hover:text-violet-400">
+                              {deal.name}
+                            </span>
+                            <span className="text-xs text-slate-400">{deal.brand}</span>
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <div className={`flex h-5 w-5 items-center justify-center rounded bg-gradient-to-br ${categoryColors[deal.category]} text-white`}>
+                              <Icon size={10} />
+                            </div>
+                            <span className="text-xs text-slate-600 dark:text-slate-400">{categoryLabel(deal.category)}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3"><TierBadge tier={deal.tier} /></td>
+                        <td className="px-4 py-3 text-right font-bold text-violet-600 dark:text-violet-400">{formatPrice(deal.minPrice)}</td>
+                        <td className="px-4 py-3 text-right text-slate-600 dark:text-slate-400">{formatPrice(deal.avgPrice)}</td>
+                        <td className="px-4 py-3 text-right text-slate-500">{deal.sourceCount}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* 最近の異常検知 */}
       {recentAnomalies.length > 0 && (
