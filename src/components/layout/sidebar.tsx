@@ -95,10 +95,8 @@ export function Sidebar() {
 
         {/* フッタ */}
         <div className="border-t border-slate-200 px-6 py-4 dark:border-slate-800">
-          <p className="text-[10px] text-slate-400">
-            最終更新: 2026/02/07 10:30
-          </p>
-          <p className="text-[10px] text-slate-400">Phase 1 - MVP</p>
+          <p className="text-[10px] text-slate-400">Phase 5 — 運用中</p>
+          <p className="text-[10px] text-slate-400">自動収集: 毎日 9:00 / 21:00</p>
         </div>
       </aside>
     </>

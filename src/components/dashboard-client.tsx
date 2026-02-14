@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TierBadge } from "@/components/ui/tier-badge";
@@ -16,6 +17,8 @@ import {
   TrendingUp,
   AlertTriangle,
   Clock,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -72,6 +75,22 @@ export function DashboardClient({
   recentAnomalies,
   lastFetchedAt,
 }: DashboardClientProps) {
+  const [batchStatus, setBatchStatus] = useState<"idle" | "running" | "success" | "error">("idle");
+
+  const handleBatchRun = async () => {
+    setBatchStatus("running");
+    try {
+      const res = await fetch("/api/batch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-secret": "__manual__" },
+      });
+      setBatchStatus(res.ok ? "success" : "error");
+    } catch {
+      setBatchStatus("error");
+    }
+    setTimeout(() => setBatchStatus("idle"), 3000);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between">
@@ -79,12 +98,32 @@ export function DashboardClient({
           <h2 className="text-2xl font-bold text-slate-900 dark:text-white">ダッシュボード</h2>
           <p className="mt-1 text-sm text-slate-500">ゲーミングPCパーツの価格概況</p>
         </div>
-        {lastFetchedAt && (
-          <div className="flex items-center gap-1.5 text-xs text-slate-400">
-            <Clock size={12} />
-            <span>最終取得: {formatLastFetched(lastFetchedAt)}</span>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleBatchRun}
+            disabled={batchStatus === "running"}
+            className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+              batchStatus === "success"
+                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                : batchStatus === "error"
+                  ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                  : "bg-violet-100 text-violet-700 hover:bg-violet-200 dark:bg-violet-900/30 dark:text-violet-400"
+            }`}
+          >
+            {batchStatus === "running" ? (
+              <Loader2 size={12} className="animate-spin" />
+            ) : (
+              <RefreshCw size={12} />
+            )}
+            {batchStatus === "success" ? "取得完了" : batchStatus === "error" ? "取得失敗" : "手動取得"}
+          </button>
+          {lastFetchedAt && (
+            <div className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Clock size={12} />
+              <span>最終: {formatLastFetched(lastFetchedAt)}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* カテゴリサマリー */}
@@ -144,33 +183,54 @@ export function DashboardClient({
               </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin">
-              {group.items.map((p) => (
-                <Card key={p.id} className="w-[260px] shrink-0 overflow-hidden transition-all hover:shadow-md sm:w-[280px]">
-                  <CardHeader className="pb-1">
-                    <div className="flex items-center gap-2">
-                      <TierBadge tier={p.tier} />
-                      <div className="flex-1 min-w-0">
-                        <CardTitle className="truncate text-sm">{p.name}</CardTitle>
-                        <p className="text-xs text-slate-500">{p.brand}</p>
+              {group.items.map((p) => {
+                // 価格変動率を計算 (直近2日間)
+                const pts = p.history?.points ?? [];
+                let changePercent: number | null = null;
+                if (pts.length >= 2) {
+                  const latest = pts[pts.length - 1].minPrice;
+                  const prev = pts[pts.length - 2].minPrice;
+                  if (prev > 0) changePercent = Math.round(((latest - prev) / prev) * 1000) / 10;
+                }
+
+                return (
+                  <Card key={p.id} className="w-[260px] shrink-0 overflow-hidden transition-all hover:shadow-md sm:w-[280px]">
+                    <CardHeader className="pb-1">
+                      <div className="flex items-center gap-2">
+                        <TierBadge tier={p.tier} />
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="truncate text-sm">{p.name}</CardTitle>
+                          <p className="text-xs text-slate-500">{p.brand}</p>
+                        </div>
+                        {changePercent !== null && changePercent !== 0 && (
+                          <div className={`flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            changePercent < 0
+                              ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                              : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                          }`}>
+                            {changePercent < 0 ? <TrendingDown size={10} /> : <TrendingUp size={10} />}
+                            {changePercent > 0 ? "+" : ""}{changePercent}%
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-end justify-between">
-                      <div>
-                        <p className="text-[10px] uppercase tracking-wider text-slate-400">最安値</p>
-                        <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{formatPrice(p.agg.minPrice)}</p>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-end justify-between">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">最安値</p>
+                          <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{formatPrice(p.agg.minPrice)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] uppercase tracking-wider text-slate-400">平均</p>
+                          <p className="text-sm text-slate-600 dark:text-slate-400">{formatPrice(p.agg.avgPrice)}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[10px] uppercase tracking-wider text-slate-400">平均</p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400">{formatPrice(p.agg.avgPrice)}</p>
-                      </div>
-                    </div>
-                    {p.history && <PriceChart history={p.history} height={100} compact />}
-                    <p className="text-[10px] text-slate-400">{p.agg.entryCount}ソースから集計</p>
-                  </CardContent>
-                </Card>
-              ))}
+                      {p.history && <PriceChart history={p.history} height={100} compact />}
+                      <p className="text-[10px] text-slate-400">{p.agg.entryCount}ソースから集計</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </div>
         );

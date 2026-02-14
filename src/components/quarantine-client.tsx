@@ -198,6 +198,36 @@ export function QuarantineClient({ products, priceEntries, anomalyRecords: initi
         </div>
       </div>
 
+      {/* 解決済み一覧 */}
+      {resolved.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-lg font-semibold text-slate-900 dark:text-white">
+            解決済み ({resolved.length})
+          </h3>
+          <div className="space-y-2">
+            {resolved.map((ar) => {
+              const product = products.find((p) => p.id === ar.productId);
+              const typeInfo = anomalyTypeLabel[ar.type];
+              const TypeIcon = typeInfo.icon;
+              return (
+                <Card key={ar.id} className="border-l-4 border-l-emerald-400 opacity-60">
+                  <CardContent className="flex items-center gap-3 p-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <TypeIcon size={14} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-slate-900 dark:text-white">{product?.name}</span>
+                      <span className="ml-2 text-xs text-slate-500">{typeInfo.label} — {formatPrice(ar.originalPrice)}</span>
+                    </div>
+                    <Badge variant="success">解決済み</Badge>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* 検知ルール説明 */}
       <Card>
         <CardContent className="p-5">
