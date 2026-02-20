@@ -13,8 +13,10 @@ import {
   PackagePlus,
   Menu,
   X,
+  Sun,
+  Moon,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { href: "/", label: "ダッシュボード", icon: LayoutDashboard },
@@ -29,6 +31,18 @@ const navItems = [
 export function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleTheme = () => {
+    const next = !isDark;
+    setIsDark(next);
+    document.documentElement.classList.toggle("dark", next);
+    localStorage.setItem("theme", next ? "dark" : "light");
+  };
 
   return (
     <>
@@ -95,6 +109,16 @@ export function Sidebar() {
 
         {/* フッタ */}
         <div className="border-t border-slate-200 px-6 py-4 dark:border-slate-800">
+          <div className="mb-3 flex items-center justify-between">
+            <span className="text-[10px] text-slate-400">テーマ</span>
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+            >
+              {isDark ? <Sun size={12} /> : <Moon size={12} />}
+              {isDark ? "ライト" : "ダーク"}
+            </button>
+          </div>
           <p className="text-[10px] text-slate-400">Phase 5 — 運用中</p>
           <p className="text-[10px] text-slate-400">自動収集: 毎日 9:00 / 21:00</p>
         </div>

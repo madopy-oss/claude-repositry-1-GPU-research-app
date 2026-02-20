@@ -9,7 +9,7 @@ import { PriceChart } from "@/components/charts/price-chart";
 import { aggregatePrices } from "@/lib/price";
 import { formatPrice, formatDate, tierBorderColor, cn } from "@/lib/utils";
 import type { PartCategory, Tier, DeviceType, Product, PriceEntry, AggregatedPrice, PriceHistory } from "@/types";
-import { ChevronDown, ChevronUp, ExternalLink, Info } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Info, TrendingDown, TrendingUp, Package, DollarSign } from "lucide-react";
 import { tierDescriptions } from "@/data/tiers";
 
 interface ProductWithPricing extends Product {
@@ -134,6 +134,51 @@ export function ProductList({ category, title, description, products, priceEntri
         )}
       </Card>
 
+      {/* カテゴリ統計サマリー */}
+      {(() => {
+        const desktopItems = getProducts("desktop");
+        const allPrices = desktopItems.filter((p) => p.agg.minPrice > 0);
+        const cheapest = allPrices.length > 0 ? allPrices.reduce((a, b) => a.agg.minPrice < b.agg.minPrice ? a : b) : null;
+        const avgMin = allPrices.length > 0 ? Math.round(allPrices.reduce((s, p) => s + p.agg.minPrice, 0) / allPrices.length) : 0;
+        return (
+          <div className="grid grid-cols-3 gap-3">
+            <Card>
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                  <Package size={18} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white">{desktopItems.length}</p>
+                  <p className="text-[10px] text-slate-500">監視中の製品</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <TrendingDown size={18} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-violet-600 dark:text-violet-400">{cheapest ? formatPrice(cheapest.agg.minPrice) : "—"}</p>
+                  <p className="text-[10px] text-slate-500">{cheapest ? cheapest.name : "カテゴリ最安値"}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex items-center gap-3 p-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400">
+                  <DollarSign size={18} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white">{avgMin > 0 ? formatPrice(avgMin) : "—"}</p>
+                  <p className="text-[10px] text-slate-500">平均最安値</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      })()}
+
       {/* Desktop / Laptop タブ */}
       <Tabs tabs={deviceTabs} defaultTab="desktop">
         {(activeTab) => {
@@ -155,6 +200,15 @@ export function ProductList({ category, title, description, products, priceEntri
             <div className="space-y-3">
               {items.map((p) => {
                 const isExpanded = expandedId === p.id;
+                // 価格変動率
+                const pts = p.history?.points ?? [];
+                let changePercent: number | null = null;
+                if (pts.length >= 2) {
+                  const latest = pts[pts.length - 1].minPrice;
+                  const prev = pts[pts.length - 2].minPrice;
+                  if (prev > 0) changePercent = Math.round(((latest - prev) / prev) * 1000) / 10;
+                }
+
                 return (
                   <Card
                     key={p.id}
@@ -175,6 +229,16 @@ export function ProductList({ category, title, description, products, priceEntri
                           <h3 className="truncate text-sm font-semibold text-slate-900 dark:text-white sm:text-base">
                             {p.name}
                           </h3>
+                          {changePercent !== null && changePercent !== 0 && (
+                            <span className={`flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+                              changePercent < 0
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                            }`}>
+                              {changePercent < 0 ? <TrendingDown size={9} /> : <TrendingUp size={9} />}
+                              {changePercent > 0 ? "+" : ""}{changePercent}%
+                            </span>
+                          )}
                         </div>
                         <p className="text-xs text-slate-500">{p.brand}</p>
                       </div>
